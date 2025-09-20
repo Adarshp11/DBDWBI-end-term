@@ -1,0 +1,87 @@
+-- Create the database if it doesn't exist
+CREATE DATABASE IF NOT EXISTS pms_system;
+
+-- Use the database
+USE pms_system;
+
+-- Drop tables if they exist to ensure a clean start
+DROP TABLE IF EXISTS feedback;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS goals;
+DROP TABLE IF EXISTS employees;
+
+-- Create the employees table
+-- This table stores information about employees and their managers.
+CREATE TABLE employees (
+    employee_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL, -- NOTE: In a real application, always hash passwords!
+    role ENUM('manager', 'employee') NOT NULL,
+    manager_id INT,
+    FOREIGN KEY (manager_id) REFERENCES employees(employee_id) ON DELETE SET NULL
+);
+
+-- Create the goals table
+-- This table stores the goals for each employee.
+CREATE TABLE goals (
+    goal_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date DATE,
+    status ENUM('Not Started', 'In Progress', 'Completed', 'On Hold') DEFAULT 'Not Started',
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE
+);
+
+-- Create the tasks table
+-- This table stores the tasks associated with each goal.
+CREATE TABLE tasks (
+    task_id INT AUTO_INCREMENT PRIMARY KEY,
+    goal_id INT,
+    description TEXT NOT NULL,
+    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    FOREIGN KEY (goal_id) REFERENCES goals(goal_id) ON DELETE CASCADE
+);
+
+-- Create the feedback table
+-- This table stores feedback from managers for each goal.
+CREATE TABLE feedback (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    goal_id INT,
+    manager_id INT,
+    feedback_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (goal_id) REFERENCES goals(goal_id) ON DELETE CASCADE,
+    FOREIGN KEY (manager_id) REFERENCES employees(employee_id) ON DELETE CASCADE
+);
+
+-- Insert sample data for demonstration
+-- Managers
+INSERT INTO employees (name, email, password, role) VALUES
+('Alice Manager', 'alice@example.com', 'password', 'manager'),
+('Bob Manager', 'bob@example.com', 'password', 'manager');
+
+-- Employees
+INSERT INTO employees (name, email, password, role, manager_id) VALUES
+('Charlie Employee', 'charlie@example.com', 'password', 'employee', 1),
+('David Employee', 'david@example.com', 'password', 'employee', 1),
+('Eve Employee', 'eve@example.com', 'password', 'employee', 2);
+
+-- Goals for Charlie
+INSERT INTO goals (employee_id, title, description, due_date, status) VALUES
+(3, 'Increase Q4 Sales by 10%', 'Increase quarterly sales by 10% through generating new leads and closing existing ones.', '2025-12-31', 'In Progress'),
+(3, 'Complete Advanced Python Course', 'Finish the advanced Python for data science course on Coursera.', '2025-11-30', 'Not Started');
+
+-- Goals for David
+INSERT INTO goals (employee_id, title, description, due_date, status) VALUES
+(4, 'Develop New Auth Feature', 'Develop and deploy the new user authentication feature for the main application.', '2025-10-31', 'Completed');
+
+-- Tasks for Charlie's sales goal
+INSERT INTO tasks (goal_id, description, status) VALUES
+(1, 'Identify 20 new potential clients in the APAC region.', 'Approved'),
+(1, 'Schedule introductory calls with 10 new clients.', 'Pending');
+
+-- Feedback from Alice for David's goal
+INSERT INTO feedback (goal_id, manager_id, feedback_text) VALUES
+(3, 1, 'Excellent work on the new feature. It was delivered on time and meets all specifications.');
